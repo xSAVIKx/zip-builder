@@ -1,0 +1,49 @@
+apply plugin: 'application'
+
+ext {
+    sharedManifest = manifest {
+        attributes(
+                "Build-Time": buildTime,
+                "Implementation-Version": version,
+                "Implementation-Vendor": "Iurii Sergiichuk",
+                "Specification-Version": version,
+                "Specification-Vendor": "Iurii Sergiichuk"
+        )
+    }
+}
+
+mainClassName = "com.github.xsavikx.zipbuilder.Main"
+
+dependencies {
+    compile deps.ztZip
+    compile deps.slf4j
+    compile deps.logback
+
+
+}
+
+tasks.withType(JavaCompile.class) {
+    options.deprecation = false
+    options.warnings = false
+    options.encoding = sourceEncoding
+    options.compilerArgs = ["-Xmaxerrs", "20", "-Xmaxwarns", "0", "-Xlint:all"]
+    sourceCompatibility = project.ext.sourceCompatibility
+    targetCompatibility = project.ext.targetCompatibility
+}
+
+javadoc {
+    options.memberLevel = JavadocMemberLevel.PROTECTED
+    classpath = configurations.compile
+}
+//create a single Jar with all dependencies
+task generateOneJar(type: Jar) {
+    baseName = project.name + '-all'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}
+
+tasks.withType(Jar) { // includes War and Ear
+    manifest = project.manifest {
+        from sharedManifest
+    }
+}
